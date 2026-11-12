@@ -7,9 +7,9 @@ eigenen Rechner.
 
 ## Download
 
-**[Neueste Version herunterladen](https://github.com/jsteiner4000/PlantPDF-Prod/releases/latest)**
-(Datei `PlantPDF-Setup-x.y.z.exe`) · [Alle Versionen](https://github.com/jsteiner4000/PlantPDF-Prod/releases)
-· [Website](https://jsteiner4000.github.io/PlantPDF-Prod/)
+**[Neueste Version herunterladen](https://github.com/jsteiner4000/PlantPDF-prod/releases/latest)**
+(Datei `PlantPDF-Setup-x.y.z.exe`) · [Alle Versionen](https://github.com/jsteiner4000/PlantPDF-prod/releases)
+· [Website](https://jsteiner4000.github.io/PlantPDF-prod/)
 
 Windows 10/11. Installer ausführen – installiert wird nur für den eigenen Benutzer,
 Administratorrechte sind nicht nötig. Eine neue Version installiert man genauso über die alte;
