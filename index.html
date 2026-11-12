@@ -1,0 +1,2326 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PlantPDF – PDFs bearbeiten und Anlagen dokumentieren</title>
+    <meta
+      name="description"
+      content="PlantPDF bearbeitet PDFs und erstellt Anlagendokumentationen mit Lageplan, Anschlussplan, Zugangsdaten und Fotos. Kostenlos für Windows, ohne Konto, alles bleibt auf deinem PC."
+    />
+    <meta property="og:title" content="PlantPDF – PDFs bearbeiten und Anlagen dokumentieren" />
+    <meta
+      property="og:description"
+      content="PDFs ändern, ordnen, unterschreiben und Anlagendokumentationen erstellen. Kostenlos, ohne Konto und ohne Cloud."
+    />
+    <meta property="og:image" content="bilder/pdf-bearbeiten.webp" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="fonts/Newsreader-Variable.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <style>
+      @font-face {
+        font-family: 'Inter';
+        src: url('fonts/InterVariable.woff2') format('woff2');
+        font-weight: 100 900;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Newsreader';
+        src: url('fonts/Newsreader-Variable.woff2') format('woff2');
+        font-weight: 200 800;
+        font-display: swap;
+      }
+
+      :root {
+        --bg: #fbfaf7;
+        --card: #f3f1ec;
+        --line: rgba(29, 27, 24, 0.08);
+        --ink: #1d1b18;
+        --ink-2: #6b665e;
+        --akzent: #c2410c;
+        --knopf: #1d1b18;
+        --knopf-ink: #fbfaf7;
+        --schatten: 0 1px 2px rgba(29, 27, 24, 0.06), 0 16px 48px rgba(29, 27, 24, 0.12);
+        --breite: 1120px;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1b1a18;
+          --card: #252422;
+          --line: rgba(255, 250, 240, 0.08);
+          --ink: #efece6;
+          --ink-2: #a39f97;
+          --akzent: #ff9a52;
+          --knopf: #efece6;
+          --knopf-ink: #1b1a18;
+          --schatten: 0 1px 2px rgba(0, 0, 0, 0.3), 0 16px 48px rgba(0, 0, 0, 0.4);
+          color-scheme: dark;
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font:
+          400 17px/1.6 'Inter',
+          system-ui,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        overflow-x: hidden;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+      }
+      a {
+        color: inherit;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: 'Newsreader', Georgia, serif;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        margin: 0;
+      }
+      p {
+        margin: 0;
+      }
+      .rahmen {
+        width: min(var(--breite), 100% - 32px);
+        margin-inline: auto;
+      }
+      .leise {
+        color: var(--ink-2);
+      }
+
+      /* --- Kopf ------------------------------------------------------------ */
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: color-mix(in srgb, var(--bg) 95%, transparent);
+        border-bottom: 1px solid transparent;
+        transition: border-color 200ms;
+      }
+      header.gescrollt {
+        border-color: var(--line);
+      }
+      header .rahmen {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        height: 64px;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        font-weight: 650;
+        font-size: 19px;
+        letter-spacing: -0.01em;
+      }
+      .logo img {
+        width: 30px;
+        height: 30px;
+      }
+      .logo b,
+      .wort b {
+        font-weight: inherit;
+        color: var(--akzent);
+      }
+      nav {
+        display: flex;
+        gap: 24px;
+        margin-left: auto;
+        font-size: 15px;
+      }
+      nav a {
+        text-decoration: none;
+        color: var(--ink-2);
+        transition: color 150ms;
+      }
+      nav a:hover {
+        color: var(--ink);
+      }
+      @media (max-width: 640px) {
+        nav a:not(.gh) {
+          display: none;
+        }
+      }
+
+      /* --- Knöpfe ---------------------------------------------------------- */
+      .knopf {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 50px;
+        padding: 0 22px;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 16px;
+        text-decoration: none;
+        background: var(--knopf);
+        color: var(--knopf-ink);
+        transition:
+          transform 120ms ease-out,
+          box-shadow 200ms;
+      }
+      .knopf:hover {
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+      }
+      .knopf:active {
+        transform: scale(0.98);
+      }
+      .knopf svg {
+        width: 18px;
+        height: 18px;
+      }
+      .knopf.zweit {
+        background: transparent;
+        color: var(--ink);
+        box-shadow: inset 0 0 0 1px var(--line);
+      }
+      .knopf.zweit:hover {
+        box-shadow: inset 0 0 0 1px var(--ink-2);
+      }
+      a:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--akzent);
+        outline-offset: 3px;
+        border-radius: 8px;
+      }
+
+      /* --- Bühne (Hero) ---------------------------------------------------- */
+      .held {
+        padding: 72px 0 40px;
+        text-align: center;
+      }
+      .held h1 {
+        font-size: clamp(44px, 7.4vw, 88px);
+        line-height: 1;
+        max-width: 20ch;
+        margin-inline: auto;
+      }
+      .held h1 em {
+        font-style: normal;
+        color: var(--akzent);
+      }
+      .held .unter {
+        max-width: 580px;
+        margin: 22px auto 0;
+        font-size: 19px;
+        color: var(--ink-2);
+      }
+      .aktionen {
+        display: flex;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 34px;
+      }
+      .kleingedruckt {
+        margin-top: 14px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+
+      /* Vorführung: nachgebautes PlantPDF-Fenster, eine Maus bearbeitet, unterschreibt, speichert */
+      .vorfuehrung {
+        position: relative;
+        margin: 56px auto 0;
+        max-width: 960px;
+        padding: clamp(14px, 4vw, 40px);
+        border-radius: 22px;
+        background:
+          radial-gradient(60% 80% at 12% 15%, #ffb36b 0%, transparent 60%),
+          radial-gradient(55% 70% at 88% 25%, #3fb8b0 0%, transparent 60%),
+          radial-gradient(60% 70% at 55% 105%, #ea6a5e 0%, transparent 60%), #2a3a40;
+        box-shadow: var(--schatten);
+        text-align: left;
+      }
+      .halter {
+        position: relative;
+        height: calc(var(--bh) * var(--s) * 1px);
+      }
+      .app {
+        --blau: #2563eb;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: calc(var(--bw) * 1px);
+        height: calc(var(--bh) * 1px);
+        transform: scale(var(--s));
+        transform-origin: 0 0;
+        display: flex;
+        flex-direction: column;
+        border-radius: 12px;
+        overflow: hidden;
+        background: #f1f2f4;
+        color: #1f2328;
+        font:
+          400 13px/1.4 'Inter',
+          sans-serif;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
+        user-select: none;
+      }
+      .app svg {
+        width: 15px;
+        height: 15px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .app-kopf {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 46px;
+        padding: 0 10px;
+        background: #f1f2f4;
+      }
+      .wort {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-weight: 650;
+      }
+      .wort img {
+        width: 22px;
+        height: 22px;
+      }
+      .wort b {
+        color: #ea6a1a;
+      }
+      .umschalter {
+        display: flex;
+        padding: 3px;
+        border-radius: 9px;
+        background: #e4e6ea;
+        font-weight: 500;
+      }
+      .umschalter span {
+        padding: 4px 14px;
+        border-radius: 7px;
+        color: #5b616b;
+      }
+      .umschalter .an {
+        background: #fff;
+        color: var(--blau);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+      }
+      .ikon {
+        display: grid;
+        place-items: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        color: #5b616b;
+      }
+      .reiter {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 8px;
+        background: #fff;
+        font-weight: 500;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+      }
+      .reiter svg {
+        color: var(--blau);
+      }
+      .punkt {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--blau);
+        scale: 0;
+        transition: scale 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .app.bearbeitet .punkt {
+        scale: 1;
+      }
+      .rechts {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: auto;
+      }
+      .speichern {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 32px;
+        padding: 0 16px;
+        border-radius: 8px;
+        background: var(--blau);
+        color: #fff;
+        font-weight: 600;
+        transition: filter 150ms;
+      }
+      .app-band {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: 42px;
+        margin: 0 6px;
+        padding: 0 8px;
+        border-radius: 10px;
+        background: #fff;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        white-space: nowrap;
+      }
+      .werkzeug {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 9px;
+        border-radius: 7px;
+        transition:
+          background 200ms,
+          color 200ms;
+      }
+      .werkzeug svg {
+        color: var(--blau);
+      }
+      .werkzeug.aktiv {
+        background: #e8efff;
+        color: var(--blau);
+      }
+      .trenner {
+        width: 1px;
+        height: 20px;
+        margin: 0 4px;
+        background: #e4e6ea;
+      }
+      .app-flaeche {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+        margin-top: 8px;
+        background: #e8e9ec;
+      }
+      /* Szenen: PDF (Protokoll) und Dokumentation (Lageplan) teilen sich die Fläche */
+      .app.doku {
+        --blau: #0f766e;
+      }
+      .szene {
+        position: absolute;
+        inset: 0;
+        transition:
+          opacity 380ms ease-out,
+          translate 520ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .szene-doku,
+      .app.doku .szene-pdf {
+        opacity: 0;
+        translate: 0 12px;
+      }
+      .app.doku .szene-doku {
+        opacity: 1;
+        translate: 0 0;
+      }
+      .band-pdf {
+        display: contents;
+      }
+      .band-doku,
+      .app.doku .band-pdf {
+        display: none;
+      }
+      .app.doku .band-doku {
+        display: contents;
+      }
+
+      /* Protokoll im PDF-Bereich */
+      .seite {
+        position: absolute;
+        left: 50%;
+        top: 16px;
+        width: calc(var(--sw) * 1px);
+        translate: -50% 0;
+        background: #fff;
+        color: #1c1917;
+        font:
+          400 11px/1.35 Helvetica,
+          Arial,
+          sans-serif;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      }
+      .seite .tb {
+        display: inline-block;
+        position: relative;
+        border-radius: 2px;
+        outline: 1px solid transparent;
+        outline-offset: 1px;
+        transition: outline-color 300ms;
+      }
+      .app.bearbeiten .seite .tb {
+        outline-color: rgba(37, 99, 235, 0.35);
+      }
+      .seite .tb.fokus {
+        outline: 1.5px solid var(--blau) !important;
+      }
+      .s-band {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 13px 30px;
+        background: #0f766e;
+        color: #fff;
+      }
+      .s-logo {
+        display: grid;
+        place-items: center;
+        width: 27px;
+        height: 27px;
+        border-radius: 7px;
+        background: #fff;
+      }
+      .app .s-logo svg {
+        width: 17px;
+        height: 17px;
+        fill: #0f766e;
+        stroke: none;
+      }
+      .s-firma b {
+        font-size: 11.5px;
+      }
+      .s-firma > span {
+        display: block;
+      }
+      .s-bemerkung {
+        margin-top: 12px;
+        padding: 8px 12px;
+        border-left: 3px solid #ea580c;
+        border-radius: 0 6px 6px 0;
+        background: #f0f7f6;
+        font-size: 9.5px;
+      }
+      .s-bemerkung b {
+        display: block;
+        font-size: 8px;
+        color: #0f766e;
+      }
+      .app.schmal .mappe {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        top: auto;
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        width: auto;
+        border-radius: 10px;
+      }
+      .app.schmal .mappe b {
+        grid-column: 1 / -1;
+      }
+      .s-firma span,
+      .s-nr small {
+        font-size: 7.5px;
+        color: #ccebe7;
+      }
+      .s-nr {
+        margin-left: auto;
+        text-align: right;
+      }
+      .s-nr small {
+        display: block;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+      }
+      .s-nr b {
+        font-size: 11px;
+      }
+      .s-innen {
+        padding: 16px 30px 22px;
+      }
+      .s-titelzeile {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .s-titel {
+        font-size: 23px;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      .s-badge {
+        padding: 2px 8px;
+        border-radius: 99px;
+        background: #fef3c7;
+        color: #b45309;
+        font-size: 8.5px;
+        font-weight: 700;
+      }
+      .s-unter {
+        margin-top: 2px;
+        font-size: 11.5px;
+        color: #6b7280;
+      }
+      .s-info {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-top: 12px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        background: #f0f7f6;
+      }
+      .s-info small {
+        display: block;
+        font-size: 6.5px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        color: #0f766e;
+      }
+      .s-info .tb {
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .app.schmal .s-info {
+        grid-template-columns: 1fr 1fr;
+      }
+      .wahl {
+        border-radius: 1px;
+      }
+      .wahl.markiert {
+        background: #bfdbfe;
+      }
+      .schreibmarke {
+        display: none;
+        width: 1.5px;
+        height: 13px;
+        margin-left: 1px;
+        vertical-align: -2px;
+        background: #1c1917;
+        animation: blinken 1s steps(1) infinite;
+      }
+      .tb.fokus .schreibmarke {
+        display: inline-block;
+      }
+      @keyframes blinken {
+        50% {
+          opacity: 0;
+        }
+      }
+      .s-h2 {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-top: 14px;
+        font-size: 12.5px;
+        font-weight: 700;
+      }
+      .s-h2 small {
+        font-size: 8px;
+        font-weight: 400;
+        color: #6b7280;
+      }
+      .s-liste {
+        margin-top: 5px;
+      }
+      .s-liste div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 8px;
+        border-radius: 5px;
+      }
+      .s-liste div:nth-child(odd) {
+        background: #f8faf9;
+      }
+      .s-liste .pos {
+        display: grid;
+        place-items: center;
+        flex: none;
+        width: 15px;
+        height: 15px;
+        border-radius: 50%;
+        background: #e3f3f0;
+        color: #0f766e;
+        font-size: 8px;
+        font-weight: 700;
+      }
+      .s-liste .menge {
+        margin-left: auto;
+        color: #6b7280;
+      }
+      .s-liste .betrag {
+        width: 64px;
+        text-align: right;
+      }
+      .s-liste .summe {
+        justify-content: space-between;
+        margin: 4px 0 0 auto;
+        width: 50%;
+        border-top: 1px solid #1c1917;
+        border-radius: 0;
+        background: none !important;
+        font-weight: 700;
+      }
+      .s-liste .summe .betrag {
+        width: auto;
+        color: #0f766e;
+        font-size: 12px;
+      }
+      .s-unterschriften {
+        display: flex;
+        gap: 50px;
+        margin-top: 42px;
+      }
+      .s-unterschriften div {
+        position: relative;
+        flex: 1;
+        padding-top: 4px;
+        border-top: 1px solid #1c1917;
+        font-size: 8px;
+        color: #6b7280;
+      }
+      .app .zug {
+        position: absolute;
+        left: 6px;
+        bottom: 8px;
+        width: 150px;
+        height: 46px;
+        overflow: visible;
+      }
+      .zug path {
+        fill: none;
+        stroke: #1e3a8a;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+      }
+      .zug.da path {
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1300ms cubic-bezier(0.45, 0, 0.25, 1);
+      }
+
+      /* Dokumentation: Projektmappe links, Lageplan in der Mitte */
+      .mappe {
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 160px;
+        padding: 12px 8px;
+        background: #fff;
+        font-size: 11.5px;
+      }
+      .mappe b {
+        display: block;
+        padding: 0 6px 8px;
+        font-size: 12px;
+      }
+      .mappe span {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px;
+        border-radius: 7px;
+        color: #3b4048;
+      }
+      .mappe span::before {
+        content: '';
+        width: 16px;
+        height: 21px;
+        border-radius: 2px;
+        background: #fff;
+        box-shadow: inset 0 0 0 1px #d6d9de;
+      }
+      .mappe .an {
+        background: #e3f3f0;
+        color: #0f766e;
+        font-weight: 600;
+      }
+      .mappe .an::before {
+        background: linear-gradient(#fff 35%, #d5e6d2 35%);
+      }
+      .plan-blatt {
+        position: absolute;
+        left: 178px;
+        right: 18px;
+        top: 16px;
+        padding: 16px 22px;
+        background: #fff;
+        color: #1e3a4a;
+        font:
+          400 10px/1.3 Helvetica,
+          Arial,
+          sans-serif;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      }
+      .app.schmal .plan-blatt {
+        left: 14px;
+        right: 14px;
+      }
+      .plan-blatt h4 {
+        margin: 0;
+        font-size: 19px;
+      }
+      .plan-blatt p {
+        padding-bottom: 7px;
+        border-bottom: 2px solid #1e3a4a;
+        color: #6b7280;
+      }
+      .app .plan-blatt svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        margin-top: 10px;
+        stroke: none;
+        stroke-width: 1;
+      }
+      .plan text {
+        font:
+          600 8px Helvetica,
+          Arial,
+          sans-serif;
+      }
+      .kamera .kegel,
+      .kamera .knopf-k {
+        transform: scale(0);
+        transition: transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .kamera .kegel {
+        transition-duration: 800ms;
+        transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+        transition-delay: 120ms;
+      }
+      .kamera text {
+        opacity: 0;
+        transition: opacity 300ms 250ms;
+      }
+      .kamera.da .kegel,
+      .kamera.da .knopf-k {
+        transform: scale(1);
+      }
+      .kamera.da text {
+        opacity: 1;
+      }
+      .hinweis {
+        position: absolute;
+        left: 50%;
+        bottom: 22px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        padding: 10px 16px 10px 12px;
+        border-radius: 12px;
+        background: #1f2328;
+        color: #fff;
+        font-weight: 500;
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+        translate: -50% 12px;
+        opacity: 0;
+        transition:
+          translate 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+          opacity 200ms;
+      }
+      .hinweis.an {
+        translate: -50% 0;
+        opacity: 1;
+      }
+      .hinweis .haken {
+        display: grid;
+        place-items: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #22c55e;
+      }
+      .hinweis .haken svg {
+        width: 12px;
+        height: 12px;
+        stroke-width: 3;
+      }
+      .zeiger {
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 5;
+        width: 22px;
+        height: 22px;
+        translate: 640px 420px;
+        transition: translate 750ms cubic-bezier(0.22, 1, 0.36, 1);
+        pointer-events: none;
+      }
+      .zeiger svg {
+        width: 22px;
+        height: 22px;
+        fill: #111;
+        stroke: #fff;
+        stroke-width: 1.4;
+        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+        transition: scale 120ms;
+        transform-origin: 3px 3px;
+      }
+      .zeiger.klick svg {
+        scale: 0.82;
+      }
+      .zeiger::after {
+        content: '';
+        position: absolute;
+        left: -9px;
+        top: -9px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: rgba(37, 99, 235, 0.35);
+        scale: 0;
+        opacity: 0;
+      }
+      .zeiger.klick::after {
+        animation: welle 450ms ease-out;
+      }
+      @keyframes welle {
+        from {
+          scale: 0.3;
+          opacity: 1;
+        }
+        to {
+          scale: 1.6;
+          opacity: 0;
+        }
+      }
+      /* Schmal: weniger Werkzeuge, damit das Fenster lesbar bleibt */
+      .app.schmal .breit {
+        display: none;
+      }
+
+      /* --- Abschnitte ------------------------------------------------------ */
+      section {
+        padding: 96px 0;
+      }
+      .kopfzeile {
+        max-width: 660px;
+        margin-bottom: 48px;
+      }
+      .kopfzeile .marke {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--akzent);
+        letter-spacing: 0.02em;
+      }
+      .kopfzeile h2 {
+        margin-top: 8px;
+        font-size: clamp(34px, 4.6vw, 52px);
+        line-height: 1.08;
+      }
+      .kopfzeile p {
+        margin-top: 16px;
+        font-size: 18px;
+        color: var(--ink-2);
+      }
+      .karten {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+      }
+      .karte {
+        padding: 26px;
+        border-radius: 18px;
+        background: var(--card);
+      }
+      .karte .zeichen,
+      .teil .zeichen {
+        display: grid;
+        place-items: center;
+        width: 44px;
+        height: 44px;
+        margin-bottom: 18px;
+        border-radius: 12px;
+        color: var(--akzent);
+        background: color-mix(in srgb, var(--akzent) 12%, transparent);
+      }
+      .karte .zeichen svg,
+      .teil .zeichen svg {
+        width: 22px;
+        height: 22px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .karte h3 {
+        font-size: 23px;
+        line-height: 1.15;
+      }
+      .karte p {
+        margin-top: 8px;
+        font-size: 16px;
+        color: var(--ink-2);
+      }
+      @media (max-width: 960px) {
+        .karten {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 560px) {
+        .karten {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .reihen {
+        margin-top: 56px;
+      }
+      /* Anlagendokumentation: eigener, leicht abgesetzter Abschnitt */
+      .doku-abschnitt {
+        background: var(--card);
+      }
+      .doku-abschnitt .bild.flach {
+        background: var(--bg);
+      }
+      .doku-abschnitt .wohin div:not(.bleibt) {
+        background: var(--card);
+      }
+      .teile {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .teil {
+        display: flex;
+        gap: 16px;
+        padding: 22px;
+        border-radius: 16px;
+        background: var(--bg);
+      }
+      .teil .zeichen {
+        flex: none;
+        margin: 0;
+      }
+      .teil h3 {
+        font-size: 21px;
+        line-height: 1.2;
+      }
+      .teil p {
+        margin-top: 4px;
+        font-size: 15px;
+        color: var(--ink-2);
+      }
+      @media (max-width: 960px) {
+        .teile {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .teile {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* --- Funktionen: abwechselnd Text und Bild ----------------------------- */
+      .reihe {
+        display: grid;
+        grid-template-columns: 1fr 1.25fr;
+        gap: 56px;
+        align-items: center;
+        padding: 40px 0;
+      }
+      .reihe:nth-child(even) .bild {
+        order: -1;
+      }
+      .reihe h3 {
+        font-size: clamp(28px, 3.4vw, 38px);
+        line-height: 1.12;
+      }
+      .reihe p {
+        margin-top: 14px;
+        color: var(--ink-2);
+      }
+      .reihe ul {
+        margin: 18px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+      }
+      .reihe li {
+        display: flex;
+        gap: 10px;
+        align-items: baseline;
+      }
+      .reihe li::before {
+        content: '';
+        flex: none;
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--akzent);
+        translate: 0 -2px;
+      }
+      .bild {
+        border-radius: 18px;
+        overflow: hidden;
+        background: var(--card);
+        box-shadow: var(--schatten);
+      }
+      .bild.flach {
+        box-shadow: none;
+        padding: 28px;
+      }
+      @media (max-width: 860px) {
+        .reihe {
+          grid-template-columns: 1fr;
+          gap: 28px;
+        }
+        .reihe:nth-child(even) .bild {
+          order: 0;
+        }
+      }
+
+      /* Unterschrift: drei Wege, ein Blatt, der Zug schreibt sich beim Einblenden */
+      .wege {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .wege span {
+        padding: 6px 12px;
+        border-radius: 99px;
+        font-size: 14px;
+        background: var(--bg);
+      }
+      .wege span:first-child {
+        color: var(--akzent);
+        box-shadow: inset 0 0 0 1.5px var(--akzent);
+      }
+      .blatt {
+        margin-top: 18px;
+        padding: 34px 30px 22px;
+        border-radius: 12px;
+        background: #fff;
+        color: #1c1c21;
+      }
+      .blatt svg {
+        width: 100%;
+        max-width: 260px;
+        height: auto;
+        overflow: visible;
+      }
+      .blatt path {
+        fill: none;
+        stroke: #1e3a8a;
+        stroke-width: 2.4;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+      }
+      .reihe.da .blatt path {
+        stroke-dashoffset: 0;
+        transition: stroke-dashoffset 1800ms 500ms cubic-bezier(0.45, 0, 0.25, 1);
+      }
+      .blatt .linie {
+        padding-top: 6px;
+        border-top: 1px solid #1c1c21;
+        font-size: 12px;
+        color: #74747a;
+      }
+      /* Datenschutz: was bleibt, was rausgeht */
+      .wohin {
+        display: grid;
+        gap: 12px;
+        font-size: 16px;
+      }
+      .wohin div {
+        padding: 16px 18px;
+        border-radius: 12px;
+        background: var(--bg);
+      }
+      .wohin small {
+        display: block;
+        margin-bottom: 4px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--ink-2);
+      }
+      .wohin .bleibt {
+        background: color-mix(in srgb, var(--akzent) 9%, var(--bg));
+      }
+
+      /* --- Download ------------------------------------------------------- */
+      .download {
+        display: grid;
+        grid-template-columns: 1.1fr 1fr;
+        gap: 40px 56px;
+        border-radius: 28px;
+        padding: 64px clamp(24px, 5vw, 64px) 40px;
+        background: var(--card);
+      }
+      .download h2 {
+        font-size: clamp(36px, 5vw, 56px);
+        line-height: 1.05;
+      }
+      .download .unter {
+        margin: 16px 0 28px;
+        max-width: 520px;
+        color: var(--ink-2);
+      }
+      .knopf.gross {
+        height: 58px;
+        padding: 0 28px;
+        font-size: 17px;
+        white-space: nowrap;
+      }
+      @media (max-width: 480px) {
+        .knopf.gross {
+          width: 100%;
+          justify-content: center;
+          padding: 0 14px;
+          font-size: 16px;
+        }
+      }
+      .lade-meta {
+        margin-top: 14px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+      .neu-spalte {
+        align-self: center;
+        padding: 24px 26px;
+        border-radius: 16px;
+        background: var(--bg);
+      }
+      .neu-spalte h3 {
+        font-size: 22px;
+      }
+      .neu-spalte ul {
+        margin: 12px 0 0;
+        padding: 0;
+        list-style: none;
+        display: grid;
+        gap: 8px;
+        font-size: 15px;
+        color: var(--ink-2);
+      }
+      .neu-spalte li {
+        display: flex;
+        gap: 10px;
+      }
+      .neu-spalte li::before {
+        content: '';
+        flex: none;
+        width: 6px;
+        height: 6px;
+        margin-top: 9px;
+        border-radius: 50%;
+        background: var(--akzent);
+      }
+      .installation {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin: 8px 0 0;
+        padding: 28px 0 0;
+        border-top: 1px solid var(--line);
+        list-style: none;
+        counter-reset: i;
+      }
+      .installation li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 2px 12px;
+        font-size: 15px;
+      }
+      .installation li::before {
+        counter-increment: i;
+        content: counter(i);
+        grid-row: span 2;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        font: 600 13px/1 'Inter';
+        color: var(--akzent);
+        box-shadow: inset 0 0 0 1.5px var(--akzent);
+      }
+      .installation span {
+        color: var(--ink-2);
+      }
+      .fakten {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 28px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+      @media (max-width: 860px) {
+        .download,
+        .installation {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Dialog nach dem Download */
+      dialog#weiter {
+        width: min(640px, 100% - 32px);
+        max-height: calc(100% - 32px);
+        padding: 36px clamp(20px, 5vw, 40px) 28px;
+        border: 0;
+        border-radius: 22px;
+        background: var(--bg);
+        color: var(--ink);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      }
+      dialog#weiter[open] {
+        animation: aufgehen 320ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      dialog#weiter::backdrop {
+        background: rgba(20, 18, 16, 0.45);
+        backdrop-filter: blur(4px);
+      }
+      @keyframes aufgehen {
+        from {
+          opacity: 0;
+          translate: 0 16px;
+          scale: 0.98;
+        }
+      }
+      #weiter .marke {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--akzent);
+      }
+      #weiter h2 {
+        margin: 6px 0 12px;
+        font-size: clamp(28px, 4vw, 36px);
+        line-height: 1.1;
+      }
+      #weiter .zu {
+        position: absolute;
+        top: 14px;
+        right: 16px;
+        width: 36px;
+        height: 36px;
+        border: 0;
+        border-radius: 50%;
+        font-size: 22px;
+        line-height: 1;
+        color: var(--ink-2);
+        background: var(--card);
+        cursor: pointer;
+      }
+      #weiter .klein {
+        margin-top: 18px;
+        font-size: 14px;
+      }
+      #weiter .installation {
+        margin-top: 4px;
+        padding-top: 20px;
+      }
+      /* Schematische SmartScreen-Warnung: zeigt, wohin man klickt */
+      .smartscreen {
+        margin: 22px 0 8px;
+        padding: 18px;
+        border-radius: 14px;
+        background: var(--card);
+      }
+      .ss-fenster {
+        padding: 18px 20px 16px;
+        border-radius: 6px;
+        background: #0f5fa8;
+        color: #fff;
+        font:
+          400 13px/1.45 'Segoe UI',
+          'Inter',
+          sans-serif;
+      }
+      .ss-fenster b {
+        display: block;
+        font-size: 17px;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      .ss-fenster p {
+        opacity: 0.9;
+      }
+      .ss-link {
+        display: inline-block;
+        margin-top: 8px;
+        text-decoration: underline;
+        border-radius: 4px;
+        animation: zeigen 2.4s ease-in-out infinite;
+      }
+      .ss-zeile {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 14px;
+      }
+      .ss-knopf {
+        padding: 5px 14px;
+        border: 1px solid rgba(255, 255, 255, 0.85);
+        font-size: 12px;
+      }
+      .ss-knopf.trotzdem {
+        border-radius: 2px;
+        animation: zeigen 2.4s 1.2s ease-in-out infinite;
+      }
+      @keyframes zeigen {
+        0%,
+        45%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 195, 90, 0);
+        }
+        15%,
+        30% {
+          box-shadow: 0 0 0 4px #ffc35a;
+        }
+      }
+      @media (max-width: 640px) {
+        #weiter .installation {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      footer {
+        padding: 40px 0 56px;
+        font-size: 14px;
+        color: var(--ink-2);
+      }
+      footer .rahmen {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 28px;
+        justify-content: space-between;
+      }
+
+      /* Einblenden beim Scrollen */
+      .auftritt {
+        opacity: 0;
+        translate: 0 56px;
+        transition:
+          opacity 800ms ease-out,
+          translate 1000ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .auftritt.da {
+        opacity: 1;
+        translate: 0 0;
+      }
+      .karte.auftritt:nth-child(2),
+      .teil.auftritt:nth-child(3n + 2) {
+        transition-delay: 80ms;
+      }
+      .karte.auftritt:nth-child(3),
+      .teil.auftritt:nth-child(3n) {
+        transition-delay: 160ms;
+      }
+      .karte.auftritt:nth-child(4) {
+        transition-delay: 240ms;
+      }
+      .reihe.auftritt .bild {
+        translate: 0 64px;
+        transition: translate 1200ms 150ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+      .reihe.auftritt.da .bild {
+        translate: 0 0;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+        .auftritt,
+        .reihe.auftritt .bild {
+          opacity: 1;
+          translate: none;
+          transition: none;
+        }
+        .blatt path,
+        .zug path {
+          stroke-dashoffset: 0;
+          transition: none !important;
+        }
+        .schreibmarke,
+        dialog#weiter[open],
+        .ss-link,
+        .ss-knopf.trotzdem {
+          animation: none;
+        }
+        .ss-link,
+        .ss-knopf.trotzdem {
+          box-shadow: 0 0 0 3px #ffc35a;
+        }
+        .zeiger {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="rahmen">
+        <a class="logo" href="#" aria-label="PlantPDF, zum Anfang">
+          <img src="bilder/symbol.svg" alt="" width="30" height="30" />
+          <span>Plant<b>PDF</b></span>
+        </a>
+        <nav aria-label="Seite">
+          <a href="#pdf">PDF</a>
+          <a href="#dokumentation">Anlagendokumentation</a>
+          <a href="#download">Download</a>
+          <a class="gh" href="https://github.com/jsteiner4000/PlantPDF-prod">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <div class="held rahmen">
+        <h1>PDFs bearbeiten.<br /><em>Anlagen dokumentieren.</em></h1>
+        <p class="unter">
+          PlantPDF ändert Texte direkt in der Originalschrift, ordnet Seiten und setzt deine
+          Unterschrift ein. Und es baut dir komplette Anlagendokumentationen mit Lageplan,
+          Anschlussplan, Zugangsdaten und Fotos. Kostenlos für Windows, ohne Konto, alles bleibt auf
+          deinem PC.
+        </p>
+        <div class="aktionen">
+          <a class="knopf lade-link" href="https://github.com/jsteiner4000/PlantPDF-prod/releases/latest">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14" />
+            </svg>
+            Für Windows herunterladen
+          </a>
+          <a class="knopf zweit" href="#dokumentation">Anlagendokumentation ansehen</a>
+        </div>
+        <p class="kleingedruckt"><span class="version-text">Kostenlos</span> · Windows 10 und 11</p>
+
+        <div
+          class="vorfuehrung"
+          role="img"
+          aria-label="Vorführung: In einem Angebot wird ein Tippfehler korrigiert und unterschrieben, danach werden im Bereich Dokumentation zwei Kameras in einen Lageplan gesetzt"
+        >
+          <div class="halter">
+            <div class="app" aria-hidden="true">
+              <div class="app-kopf">
+                <span class="wort"
+                  ><img src="bilder/symbol.svg" alt="" /><span class="breit">Plant<b>PDF</b></span></span
+                >
+                <span class="umschalter"
+                  ><span class="an" data-ziel="ws-pdf">PDF</span
+                  ><span data-ziel="ws-doku">Dokumentation</span></span
+                >
+                <span class="ikon breit"
+                  ><svg viewBox="0 0 24 24"><path d="M4 11 12 4l8 7M6 9.5V20h12V9.5" /></svg
+                ></span>
+                <span class="reiter"
+                  ><svg viewBox="0 0 24 24">
+                    <path d="M7 3h7l5 5v13H7zM14 3v5h5" /></svg
+                  ><span class="reiter-name">Angebot.pdf</span><span class="punkt"></span
+                ></span>
+                <span class="rechts">
+                  <span class="ikon breit"
+                    ><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3" /></svg
+                  ></span>
+                  <span class="speichern" data-ziel="speichern"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M5 4h11l3 3v13H5zM8 4v5h7V4M8 20v-6h8v6" /></svg
+                    >Speichern</span
+                  >
+                </span>
+              </div>
+              <div class="app-band">
+                <span class="band-pdf">
+                  <span class="werkzeug" data-ziel="bearbeiten"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M12 20h8M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg
+                    >Bearbeiten</span
+                  >
+                  <span class="werkzeug breit"
+                    ><svg viewBox="0 0 24 24"><path d="M5 5h14M12 5v14M9 19h6" /></svg>Text</span
+                  >
+                  <span class="werkzeug breit"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" /></svg
+                    >Bild</span
+                  >
+                  <span class="trenner"></span>
+                  <span class="werkzeug"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" /></svg
+                    >Seiten</span
+                  >
+                  <span class="werkzeug breit"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M7 3h7l5 5v13H7zM13 11v6M10 14h6" /></svg
+                    >Seite einfügen</span
+                  >
+                  <span class="trenner breit"></span>
+                  <span class="werkzeug breit"
+                    ><svg viewBox="0 0 24 24"><path d="M3 8h18v8H3zM7 12h4" /></svg
+                    >Formularfelder</span
+                  >
+                  <span class="werkzeug" data-ziel="unterschrift"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M3 17c3-8 5-11 6-9s-3 9-1 9 3-6 5-6 1 5 3 5 3-3 5-3M3 21h18" /></svg
+                    >Unterschrift</span
+                  >
+                </span>
+                <span class="band-doku">
+                  <span class="werkzeug"
+                    ><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" /></svg>Abschnitt</span
+                  >
+                  <span class="werkzeug breit"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" /></svg
+                    >Bild / QR</span
+                  >
+                  <span class="trenner"></span>
+                  <span class="werkzeug" data-ziel="objekt"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14" /></svg
+                    >Objekt</span
+                  >
+                  <span class="werkzeug"
+                    ><svg viewBox="0 0 24 24">
+                      <path d="M3 17 17 3l4 4L7 21zM7 13l2 2M10 10l2 2M13 7l2 2" /></svg
+                    >Maßstab</span
+                  >
+                  <span class="werkzeug breit"
+                    ><svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h1M3 12h1M3 18h1" /></svg
+                    >Legende</span
+                  >
+                </span>
+              </div>
+              <div class="app-flaeche">
+                <div class="szene szene-pdf">
+                  <div class="seite">
+                    <div class="s-band">
+                      <span class="s-logo"
+                        ><svg viewBox="0 0 24 24"><path d="M13.5 2 5 13.5h6L10.5 22 19 10.5h-6z" /></svg
+                      ></span>
+                      <span class="s-firma"
+                        ><b class="tb">Mustermann Gebäudetechnik</b
+                        ><span>Elektro · Sicherheit · Netzwerk</span></span
+                      >
+                      <span class="s-nr"><small>ANGEBOT</small><b>Nr. A-2026-118</b></span>
+                    </div>
+                    <div class="s-innen">
+                      <div class="s-titelzeile">
+                        <span class="tb s-titel">Angebot</span>
+                        <span class="s-badge">30 Tage gültig</span>
+                      </div>
+                      <div class="s-unter">
+                        <span class="tb">Videoüberwachung · Lagerhalle Nord</span>
+                      </div>
+                      <div class="s-info">
+                        <span
+                          ><small>KUNDE</small
+                          ><span class="tb" data-ziel="zahl"
+                            ><span class="wahl">Mü</span><span class="neu"></span
+                            ><span class="schreibmarke"></span>ler Logistik GmbH</span
+                          ></span
+                        >
+                        <span><small>PROJEKT</small><span class="tb">Lagerhalle Nord</span></span>
+                        <span><small>DATUM</small><span class="tb">10.11.2026</span></span>
+                        <span><small>GÜLTIG BIS</small><span class="tb">10.12.2026</span></span>
+                      </div>
+                      <div class="s-h2">
+                        <span class="tb">Positionen</span><small>Preise netto in Euro</small>
+                      </div>
+                      <div class="s-liste">
+                        <div>
+                          <span class="pos">1</span><span class="tb">IP-Kamera 4K mit Nachtsicht</span
+                          ><span class="menge">12 St.</span><span class="betrag">4.188,00</span>
+                        </div>
+                        <div>
+                          <span class="pos">2</span><span class="tb">Netzwerkrekorder, 16 Kanäle</span
+                          ><span class="menge">1 St.</span><span class="betrag">689,00</span>
+                        </div>
+                        <div>
+                          <span class="pos">3</span><span class="tb">Montage und Einrichtung</span
+                          ><span class="menge">16 Std.</span><span class="betrag">1.120,00</span>
+                        </div>
+                        <div class="summe">
+                          <span>Gesamt netto</span><span class="betrag">5.997,00 €</span>
+                        </div>
+                      </div>
+                      <div class="s-bemerkung">
+                        <b>HINWEIS</b>Lageplan und Anlagendokumentation erhalten Sie nach der Montage
+                        als PDF.
+                      </div>
+                      <div class="s-unterschriften">
+                        <div>Ort, Datum</div>
+                        <div data-ziel="linie">
+                          Auftrag erteilt, Unterschrift Kunde
+                          <svg class="zug" viewBox="0 0 150 46">
+                            <path
+                              pathLength="1"
+                              d="M4 34c6-14 12-26 16-26 5 0-4 30 1 30 6 0 10-22 15-22 4 0 0 18 5 18 5 0 8-14 13-14 4 0 2 12 7 12 6 0 9-16 16-16 5 0 1 14 7 14 8 0 14-10 24-12M30 20c14-2 30-2 46 0"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="szene szene-doku">
+                  <div class="mappe">
+                    <b>Projektmappe</b>
+                    <span>Deckblatt</span><span>Inhalt</span><span class="an">Lageplan</span
+                    ><span>Anschlussplan</span><span>Zugangsdaten</span><span>Fotos</span>
+                  </div>
+                  <div class="plan-blatt">
+                    <h4>Lageplan</h4>
+                    <p>Lagerhalle Nord</p>
+                    <svg class="plan" viewBox="0 0 400 236">
+                      <rect width="400" height="236" fill="#e9eee4" />
+                      <rect y="200" width="400" height="36" fill="#d6d6d2" />
+                      <path d="M0 218H400" stroke="#fff" stroke-width="1.5" stroke-dasharray="10 8" />
+                      <rect x="44" width="34" height="200" fill="#d6d6d2" />
+                      <g fill="#b9cdb0">
+                        <circle cx="22" cy="40" r="13" /><circle cx="24" cy="120" r="15" /><circle
+                          cx="385"
+                          cy="188"
+                          r="12"
+                        />
+                      </g>
+                      <g fill="#c9c7c0" stroke="#8f8c84" stroke-width="1.5">
+                        <rect x="108" y="30" width="160" height="96" /><rect
+                          x="290"
+                          y="32"
+                          width="84"
+                          height="56"
+                        /><rect x="290" y="104" width="84" height="44" />
+                      </g>
+                      <g fill="#6f6b63" text-anchor="middle">
+                        <text x="188" y="82">Lagerhalle Nord</text><text x="332" y="63">Büro</text
+                        ><text x="332" y="129">Werkstatt</text>
+                      </g>
+                      <path
+                        d="M118 150v26M138 150v26M158 150v26M178 150v26M198 150v26M218 150v26M238 150v26M258 150v26"
+                        stroke="#fff"
+                        stroke-width="1.2"
+                      />
+                      <rect
+                        x="8"
+                        y="8"
+                        width="384"
+                        height="186"
+                        fill="none"
+                        stroke="#15803d"
+                        stroke-width="1.3"
+                        stroke-dasharray="2 4"
+                      />
+                      <text x="16" y="190" fill="#15803d">Gelände</text>
+                      <g class="kamera da" transform="translate(61 196)">
+                        <g transform="rotate(-90)"><path class="kegel" d="M0 0L58-28A64 64 0 0 1 58 28Z" fill="rgba(37,99,235,.18)" stroke="#3b6fd8" stroke-width=".8" /></g>
+                        <g class="knopf-k"><circle r="7.5" fill="#1d4ed8" /><path d="M-4-2.5h5v5h-5zM1 0l3-2v4z" fill="#fff" /></g>
+                        <text x="10" y="3" fill="#1f2328">K 1</text>
+                      </g>
+                      <g class="kamera da" transform="translate(380 22)">
+                        <g transform="rotate(140)"><path class="kegel" d="M0 0L34-20A40 40 0 0 1 34 20Z" fill="rgba(220,38,38,.16)" stroke="#dc2626" stroke-width=".8" /></g>
+                        <g class="knopf-k"><circle r="7" fill="#dc2626" /><circle r="2.2" fill="#fff" /></g>
+                        <text x="-30" y="3" fill="#1f2328">BM 1</text>
+                      </g>
+                      <g class="kamera" data-k="k2" transform="translate(98 20)">
+                        <g transform="rotate(35)"><path class="kegel" d="M0 0L64-32A72 72 0 0 1 64 32Z" fill="rgba(37,99,235,.18)" stroke="#3b6fd8" stroke-width=".8" /></g>
+                        <g class="knopf-k"><circle r="7.5" fill="#1d4ed8" /><path d="M-4-2.5h5v5h-5zM1 0l3-2v4z" fill="#fff" /></g>
+                        <text x="10" y="-6" fill="#1f2328">K 2</text>
+                      </g>
+                      <g class="kamera" data-k="k3" transform="translate(378 166)">
+                        <g transform="rotate(205)"><path class="kegel" d="M0 0L64-32A72 72 0 0 1 64 32Z" fill="rgba(37,99,235,.18)" stroke="#3b6fd8" stroke-width=".8" /></g>
+                        <g class="knopf-k"><circle r="7.5" fill="#1d4ed8" /><path d="M-4-2.5h5v5h-5zM1 0l3-2v4z" fill="#fff" /></g>
+                        <text x="-28" y="18" fill="#1f2328">K 3</text>
+                      </g>
+                      <circle data-ziel="k2" cx="98" cy="20" r="1" fill="none" />
+                      <circle data-ziel="k3" cx="378" cy="166" r="1" fill="none" />
+                    </svg>
+                  </div>
+                </div>
+                <div class="hinweis">
+                  <span class="haken"
+                    ><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span
+                  >Gespeichert
+                </div>
+              </div>
+              <div class="zeiger">
+                <svg viewBox="0 0 24 24"><path d="M3 2l16 9.5-7 1.6-3.8 6.4z" /></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <section id="pdf">
+        <div class="rahmen">
+          <div class="kopfzeile auftritt">
+            <span class="marke">PDF bearbeiten</span>
+            <h2>Alles, was eine PDF sonst so stur macht.</h2>
+            <p>
+              Öffne die Datei, klick hinein und ändere, was nicht stimmt. Kein Umweg über Word,
+              kein Neuschreiben.
+            </p>
+          </div>
+          <div class="karten">
+            <div class="karte auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24">
+                  <path d="M12 20h8M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" /></svg
+              ></span>
+              <h3>Text bearbeiten</h3>
+              <p>Direkt in den Text klicken und schreiben, in der Schrift des Dokuments.</p>
+            </div>
+            <div class="karte auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4" /></svg
+              ></span>
+              <h3>Bilder und Grafiken</h3>
+              <p>Verschieben, Größe ändern, ersetzen. Hilfslinien rasten sauber ein.</p>
+            </div>
+            <div class="karte auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24">
+                  <path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z" /></svg
+              ></span>
+              <h3>Seiten ordnen</h3>
+              <p>Einfügen, löschen, drehen, sortieren. Die Seitenzahlen ziehen mit.</p>
+            </div>
+            <div class="karte auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24">
+                  <path d="M3 17c3-8 5-11 6-9s-3 9-1 9 3-6 5-6 1 5 3 5 3-3 5-3M3 21h18" /></svg
+              ></span>
+              <h3>Unterschreiben</h3>
+              <p>Einmal hinterlegen, danach mit der Taste U in jedes Dokument setzen.</p>
+            </div>
+          </div>
+
+          <div class="reihen">
+            <div class="reihe auftritt">
+              <div>
+                <h3>Tippen, als wäre es dein eigenes Dokument.</h3>
+                <p>
+                  PlantPDF erkennt Textblöcke, Absätze und Schriften. Du klickst hinein, schreibst,
+                  und der Text bricht um wie in einem Textprogramm.
+                </p>
+                <ul>
+                  <li>Schrift, Größe, Farbe und Ausrichtung links im Blick</li>
+                  <li>Formulare direkt ausfüllen oder eigene Felder anlegen</li>
+                  <li>Bis 3200 % vergrößern, scharf auf jeder Stufe</li>
+                </ul>
+              </div>
+              <div class="bild">
+                <img
+                  src="bilder/pdf-bearbeiten.webp"
+                  alt="PlantPDF im Modus PDF bearbeiten: ein Angebot, der Textblock mit dem Kundennamen ist ausgewählt"
+                  width="2160"
+                  height="1350"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <div class="reihe auftritt">
+              <div>
+                <h3>Seiten in Ordnung bringen.</h3>
+                <p>
+                  Seiten aus einer anderen PDF einfügen, überflüssige löschen, per Ziehen sortieren.
+                  Steht unten „Seite 2 / 4“, zählt PlantPDF beim Umsortieren selbst richtig weiter.
+                </p>
+              </div>
+              <div class="bild">
+                <img
+                  src="bilder/pdf-seiten.webp"
+                  alt="Seiten organisieren: vier Seiten eines Angebots als Vorschau, links die erkannten Seitenzahlen"
+                  width="2160"
+                  height="840"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <div class="reihe auftritt">
+              <div>
+                <h3>Einmal unterschreiben, überall einsetzen.</h3>
+                <p>
+                  Nimm deine Unterschrift aus einem eingescannten Vertrag, aus einem Foto oder
+                  zeichne sie mit Maus oder Stift. PlantPDF stellt sie frei und entfernt den
+                  Papierhintergrund.
+                </p>
+                <ul>
+                  <li>Mit der Taste U sitzt sie an der richtigen Stelle</li>
+                  <li>Gespeichert nur auf deinem Rechner</li>
+                </ul>
+              </div>
+              <div class="bild flach">
+                <div class="wege" aria-hidden="true">
+                  <span>Aus Dokument übernehmen</span><span>Aus Bilddatei</span><span>Zeichnen</span>
+                </div>
+                <div class="blatt">
+                  <svg viewBox="0 0 150 46" role="img" aria-label="Eine handschriftliche Unterschrift">
+                    <path
+                      pathLength="1"
+                      d="M4 34c6-14 12-26 16-26 5 0-4 30 1 30 6 0 10-22 15-22 4 0 0 18 5 18 5 0 8-14 13-14 4 0 2 12 7 12 6 0 9-16 16-16 5 0 1 14 7 14 8 0 14-10 24-12M30 20c14-2 30-2 46 0"
+                    />
+                  </svg>
+                  <div class="linie">Unterschrift Kunde</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="dokumentation" class="doku-abschnitt">
+        <div class="rahmen">
+          <div class="kopfzeile auftritt">
+            <span class="marke">Anlagendokumentation</span>
+            <h2>Eine Begehung. Ein fertiges Dokument.</h2>
+            <p>
+              Wähl eine Vorlage, trag ein, was du vor Ort vorfindest, und PlantPDF setzt daraus ein
+              sauberes PDF mit Deckblatt, Inhaltsverzeichnis und Seitenzahlen. Für Errichter von
+              Video-, Alarm- und Zutrittsanlagen, Elektriker und alle, die Anlagen übergeben.
+            </p>
+          </div>
+          <div class="teile">
+            <div class="teil auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 8h6M9 12h6M9 16h3" /></svg
+              ></span>
+              <div>
+                <h3>Deckblatt und Inhalt</h3>
+                <p>Mit Logo, Projektangaben und Ansprechpartnern. Das Inhaltsverzeichnis kommt von selbst.</p>
+              </div>
+            </div>
+            <div class="teil auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2zM9 4v14M15 6v14" /></svg
+              ></span>
+              <div>
+                <h3>Lageplan</h3>
+                <p>Kameras mit Sichtfeld, Melder, Richtfunk, Zäune und Zonen. Dazu Legende und Geräteliste.</p>
+              </div>
+            </div>
+            <div class="teil auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M9 4h6v6H9zM3 16h6v4H3zM15 16h6v4h-6zM12 10v3M6 16v-3h12v3" /></svg
+              ></span>
+              <div>
+                <h3>Anschlussplan</h3>
+                <p>Baugruppen, Leitungen und Klemmenplan, ordentlich gesetzt ohne CAD.</p>
+              </div>
+            </div>
+            <div class="teil auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4M12 15v2" /></svg
+              ></span>
+              <div>
+                <h3>Zugangsdaten</h3>
+                <p>Geräte, IP-Adressen und Passwörter auf einen Blick, mit QR-Code für die App-Einwahl.</p>
+              </div>
+            </div>
+            <div class="teil auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M3 7h4l2-3h6l2 3h4v13H3zM12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /></svg
+              ></span>
+              <div>
+                <h3>Fotodokumentation</h3>
+                <p>Fotos vom Einsatz mit Beschriftung, direkt im Dokument.</p>
+              </div>
+            </div>
+            <div class="teil auftritt">
+              <span class="zeichen"
+                ><svg viewBox="0 0 24 24"><path d="M4 4h7a3 3 0 0 1 3 3v13a2 2 0 0 0-2-2H4zM20 4h-5a3 3 0 0 0-3 3" /></svg
+              ></span>
+              <div>
+                <h3>Bedienungsanleitung</h3>
+                <p>Kapitel, Schritte mit Fotos und Störungstabelle, auf Deutsch und Englisch.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="reihen">
+            <div class="reihe auftritt">
+              <div>
+                <h3>Der Lageplan, wie du ihn vor Ort siehst.</h3>
+                <p>
+                  Leg ein Foto, eine Skizze oder eine PDF-Seite als Hintergrund an und setz Kameras,
+                  Melder und Kontakte per Klick. Blickrichtung und Reichweite ziehst du am Griff.
+                </p>
+                <ul>
+                  <li>Maßstab einmal setzen, dann Längen und Flächen in Metern</li>
+                  <li>Richtfunkstrecken mit Frequenz und SSID</li>
+                  <li>Die Geräteliste entsteht dabei von selbst</li>
+                </ul>
+              </div>
+              <div class="bild">
+                <img
+                  src="bilder/docs-lageplan.webp"
+                  alt="Bereich Dokumentation: ein Lageplan mit Kameras, Sichtfeldern und einem Zaun um das Gelände"
+                  width="2160"
+                  height="1350"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <div class="reihe auftritt">
+              <div>
+                <h3>Fertig als PDF, später einfach weiter.</h3>
+                <p>
+                  Starte mit einer Vorlage: Anlagendokumentation, Bedienungsanleitung, Technische
+                  Beschreibung oder Anschlussplan. Das Projekt steckt in der fertigen PDF. Mit „Aus PDF
+                  fortsetzen“ arbeitest du genau dort weiter.
+                </p>
+                <ul>
+                  <li>Eigene Vorlagen mit Logo, Firma und Gestaltung</li>
+                  <li>Zum Unterschreiben direkt in den PDF-Bereich</li>
+                </ul>
+              </div>
+              <div class="bild">
+                <img
+                  src="bilder/docs-start.webp"
+                  alt="Startseite im Bereich Dokumentation mit den Vorlagen Anlagendokumentation, Bedienungsanleitung, Technische Beschreibung und Anschlussplan"
+                  width="2160"
+                  height="810"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+
+            <div class="reihe auftritt">
+              <div>
+                <h3>Deine Dateien bleiben bei dir.</h3>
+                <p>
+                  PlantPDF arbeitet ohne Cloud und ohne Konto. Es führt kein JavaScript aus PDFs aus
+                  und fragt das Internet nur nach einer neuen Version.
+                </p>
+              </div>
+              <div class="bild flach">
+                <div class="wohin">
+                  <div class="bleibt">
+                    <small>Bleibt auf deinem PC</small>Dokumente, Dokumentationen, Unterschriften,
+                    eigene Schriften und Entwürfe
+                  </div>
+                  <div><small>Geht ins Internet</small>Nur die Frage nach einer neuen Version</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="download">
+        <div class="rahmen">
+          <div class="download auftritt">
+            <div>
+              <h2>Bereit für deine nächste PDF.</h2>
+              <p class="unter">
+                Einmal installieren, auf Wunsch als Standardprogramm für PDFs. Administratorrechte
+                brauchst du dafür nicht, und neue Versionen meldet PlantPDF von selbst.
+              </p>
+              <a
+                class="knopf gross lade-link"
+                href="https://github.com/jsteiner4000/PlantPDF-prod/releases/latest"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4v11m0 0 4.5-4.5M12 15l-4.5-4.5M5 20h14" />
+                </svg>
+                <span class="lade-text">PlantPDF für Windows herunterladen</span>
+              </a>
+              <p class="lade-meta">
+                <span id="lade-info">Neueste Version</span> ·
+                <a href="https://github.com/jsteiner4000/PlantPDF-prod/releases">Alle Versionen</a>
+              </p>
+            </div>
+            <div class="neu-spalte" id="neuigkeiten" hidden>
+              <h3 id="neu-titel">Was ist neu</h3>
+              <ul id="neu-liste"></ul>
+            </div>
+            <ol class="installation">
+              <li>
+                <b>Installer starten</b><span>Öffne PlantPDF-Setup aus deinem Download-Ordner.</span>
+              </li>
+              <li>
+                <b>Hinweis von Windows</b
+                ><span
+                  >PlantPDF ist noch nicht signiert. Wähle „Weitere Informationen“ und dann
+                  „Trotzdem ausführen“.</span
+                >
+              </li>
+              <li>
+                <b>Standardprogramm</b
+                ><span>Auf Wunsch öffnet ein Doppelklick auf jede PDF danach PlantPDF.</span>
+              </li>
+            </ol>
+            <div class="fakten">
+              <span>Windows 10 und 11, 64 Bit</span>
+              <span>Kostenlos und ohne Konto</span>
+              <span>PDF-Editor und Anlagendokumentation in einem</span>
+              <span>Drucken direkt aus Outlook</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Nach dem Klick auf „Laden“: was gleich passiert und dass die Windows-Warnung harmlos ist -->
+    <dialog id="weiter" aria-labelledby="weiter-titel">
+      <button class="zu" type="button" aria-label="Schließen">×</button>
+      <span class="marke">Download läuft</span>
+      <h2 id="weiter-titel">Gleich warnt Windows. Das ist normal.</h2>
+      <p class="leise">
+        PlantPDF ist noch nicht mit einem kostenpflichtigen Microsoft-Zertifikat signiert. Deshalb
+        kennt Windows den Herausgeber nicht und zeigt beim Start eine blaue Warnung. PlantPDF
+        installiert sich nur für dein Benutzerkonto und braucht keine Administratorrechte.
+      </p>
+      <div class="smartscreen" aria-hidden="true">
+        <div class="ss-fenster">
+          <b>Der Computer wurde durch Windows geschützt</b>
+          <p>
+            Von Microsoft Defender SmartScreen wurde der Start einer unbekannten App verhindert.
+          </p>
+          <span class="ss-link">Weitere Informationen</span>
+          <div class="ss-zeile">
+            <span class="ss-knopf trotzdem">Trotzdem ausführen</span
+            ><span class="ss-knopf">Nicht ausführen</span>
+          </div>
+        </div>
+      </div>
+      <ol class="installation">
+        <li><b>Installer öffnen</b><span>PlantPDF-Setup aus dem Download-Ordner.</span></li>
+        <li><b>„Weitere Informationen“</b><span>in der blauen Warnung anklicken.</span></li>
+        <li><b>„Trotzdem ausführen“</b><span>Danach führt der Installer dich durch.</span></li>
+      </ol>
+    </dialog>
+
+    <footer>
+      <div class="rahmen">
+        <span>© 2026 Julius Steiner · PlantPDF</span>
+        <span
+          ><a href="https://github.com/jsteiner4000/PlantPDF-prod">GitHub</a> ·
+          <a href="https://github.com/jsteiner4000/PlantPDF-prod/releases">Alle Versionen</a></span
+        >
+      </div>
+    </footer>
+
+    <script>
+      // Nach dem Klick auf „Laden“: Download läuft weiter, daneben die Anleitung zur Windows-Warnung
+      const dialog = document.querySelector('#weiter');
+      document.querySelectorAll('.lade-link').forEach((a) =>
+        a.addEventListener('click', () => {
+          // ohne direkten Installer-Link öffnet sich nur die Release-Seite: dann kein Dialog
+          if (/\.exe$/i.test(a.href)) setTimeout(() => dialog.showModal(), 300);
+        }),
+      );
+      dialog.querySelector('.zu').addEventListener('click', () => dialog.close());
+      dialog.addEventListener('click', (e) => e.target === dialog && dialog.close());
+
+      // Kopfzeile bekommt beim Scrollen eine Kante
+      const kopf = document.querySelector('header');
+      addEventListener('scroll', () => kopf.classList.toggle('gescrollt', scrollY > 8), {
+        passive: true,
+      });
+
+      // Abschnitte blenden beim Erreichen ein
+      const io = new IntersectionObserver(
+        (eintraege) =>
+          eintraege.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add('da');
+              io.unobserve(e.target);
+            }
+          }),
+        { threshold: 0.15 },
+      );
+      document.querySelectorAll('.auftritt').forEach((el) => io.observe(el));
+
+      // Neueste Version: Installer-Link, Nummer, Datum, Größe und Neuigkeiten.
+      // Ohne Antwort bleibt der Link auf der Release-Seite.
+      fetch('https://api.github.com/repos/jsteiner4000/PlantPDF-prod/releases/latest')
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((rel) => {
+          const v = rel.tag_name.replace(/^v/, '');
+          const exe = rel.assets.find((a) => /\.exe$/i.test(a.name));
+          if (exe)
+            document.querySelectorAll('.lade-link').forEach((a) => (a.href = exe.browser_download_url));
+          const datum = new Date(rel.published_at).toLocaleDateString('de-DE', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+          });
+          const mb = exe ? ` · ${Math.round(exe.size / 1048576)} MB` : '';
+          document.querySelector('.version-text').textContent = `Kostenlos · Version ${v}`;
+          document.querySelector('.lade-text').textContent = `PlantPDF ${v} herunterladen`;
+          document.querySelector('#lade-info').textContent = `Version ${v} vom ${datum}${mb}`;
+          // Spiegelstriche der Release-Notizen; eingerückte Folgezeilen gehören zum Punkt davor
+          const punkte = [];
+          for (const z of (rel.body || '').split('\n')) {
+            if (/^\s*[-*] /.test(z)) punkte.push(z.replace(/^\s*[-*] /, ''));
+            else if (punkte.length && /^\s+\S/.test(z)) punkte[punkte.length - 1] += ' ' + z.trim();
+          }
+          const kurz = punkte
+            .slice(0, 4)
+            .map((p) => p.replace(/\*\*|`/g, '').replace(/-\s+(?=[a-zäöü])/g, '').trim())
+            .map((p) => (p.length > 150 ? p.slice(0, p.lastIndexOf(' ', 147)) + ' …' : p));
+          if (kurz.length) {
+            document.querySelector('#neu-titel').textContent = `Neu in ${v}`;
+            const liste = document.querySelector('#neu-liste');
+            for (const p of kurz) liste.appendChild(document.createElement('li')).textContent = p;
+            document.querySelector('#neuigkeiten').hidden = false;
+          }
+        })
+        .catch(() => {});
+
+      // Vorführung: Fenster in fester Größe bauen und auf die Bühne skalieren
+      const halter = document.querySelector('.halter');
+      const app = document.querySelector('.app');
+      const passen = () => {
+        const breite = halter.clientWidth;
+        const schmal = breite < 600;
+        const bw = schmal ? 540 : 880;
+        const bh = schmal ? 620 : 560;
+        app.classList.toggle('schmal', schmal);
+        halter.style.setProperty('--bw', bw);
+        halter.style.setProperty('--bh', bh);
+        halter.style.setProperty('--sw', schmal ? 470 : 540);
+        halter.style.setProperty('--s', breite / bw);
+      };
+      passen();
+      new ResizeObserver(passen).observe(halter);
+
+      const $ = (s) => app.querySelector(s);
+      const zeiger = $('.zeiger');
+      const zahl = $('[data-ziel="zahl"]');
+      const wahl = $('.wahl');
+      const neu = $('.neu');
+      const zug = $('.zug');
+      const hinweis = $('.hinweis');
+      const reiterName = $('.reiter-name');
+      const werkzeugU = $('[data-ziel="unterschrift"]');
+      const werkzeugB = $('[data-ziel="bearbeiten"]');
+      const werkzeugO = $('[data-ziel="objekt"]');
+      const wsPdf = $('[data-ziel="ws-pdf"]');
+      const wsDoku = $('[data-ziel="ws-doku"]');
+      const neueKameras = app.querySelectorAll('[data-k]');
+
+      // Zeiger zur Mitte eines Elements (in Fensterkoordinaten, unabhängig von der Skalierung)
+      const hin = (sel, dx = 0) => {
+        const s = app.getBoundingClientRect().width / app.offsetWidth;
+        const a = app.getBoundingClientRect();
+        const r = $(sel).getBoundingClientRect();
+        const x = (r.left - a.left + r.width / 2) / s + dx;
+        const y = (r.top - a.top + r.height / 2) / s;
+        zeiger.style.translate = `${x}px ${y}px`;
+      };
+      const klick = () => {
+        zeiger.classList.remove('klick');
+        void zeiger.offsetWidth;
+        zeiger.classList.add('klick');
+      };
+      const bereich = (doku) => {
+        app.classList.toggle('doku', doku);
+        wsPdf.classList.toggle('an', !doku);
+        wsDoku.classList.toggle('an', doku);
+        reiterName.textContent = doku ? 'Lagerhalle Nord' : 'Angebot.pdf';
+      };
+      const anfang = () => {
+        bereich(false);
+        app.classList.remove('bearbeiten', 'bearbeitet');
+        for (const w of [werkzeugB, werkzeugU, werkzeugO]) w.classList.remove('aktiv');
+        zahl.classList.remove('fokus');
+        neu.textContent = '';
+        zug.classList.remove('da');
+        neueKameras.forEach((k) => k.classList.remove('da'));
+      };
+      const gespeichert = () => {
+        klick();
+        app.classList.remove('bearbeitet', 'bearbeiten');
+        for (const w of [werkzeugB, werkzeugO]) w.classList.remove('aktiv');
+        hinweis.classList.add('an');
+      };
+
+      if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        // Endzustand ohne Bewegung: korrigiert und unterschrieben
+        neu.textContent = 'l';
+        zug.classList.add('da');
+      } else {
+        const schritte = [
+          // PDF: Tippfehler im Kundennamen korrigieren, unterschreiben, speichern
+          [700, () => hin('[data-ziel="bearbeiten"]')],
+          [800, () => (klick(), app.classList.add('bearbeiten'), werkzeugB.classList.add('aktiv'))],
+          [600, () => hin('.wahl', 4)],
+          [850, () => (klick(), zahl.classList.add('fokus'))],
+          [700, () => ((neu.textContent = 'l'), app.classList.add('bearbeitet'))],
+          [900, () => hin('[data-ziel="unterschrift"]')],
+          [850, () => (klick(), werkzeugU.classList.add('aktiv'), zahl.classList.remove('fokus'))],
+          [500, () => hin('[data-ziel="linie"]', 30)],
+          [900, () => (klick(), zug.classList.add('da'), werkzeugU.classList.remove('aktiv'))],
+          [1700, () => hin('[data-ziel="speichern"]')],
+          [850, gespeichert],
+          [2000, () => hinweis.classList.remove('an')],
+          // Dokumentation: Kameras in den Lageplan setzen, speichern
+          [300, () => hin('[data-ziel="ws-doku"]')],
+          [850, () => (klick(), bereich(true))],
+          [900, () => hin('[data-ziel="objekt"]')],
+          [800, () => (klick(), werkzeugO.classList.add('aktiv'))],
+          [600, () => hin('[data-ziel="k2"]')],
+          [850, () => (klick(), neueKameras[0].classList.add('da'), app.classList.add('bearbeitet'))],
+          [1000, () => hin('[data-ziel="k3"]')],
+          [850, () => (klick(), neueKameras[1].classList.add('da'))],
+          [1400, () => hin('[data-ziel="speichern"]')],
+          [850, gespeichert],
+          [2000, () => hinweis.classList.remove('an')],
+          [300, () => hin('[data-ziel="ws-pdf"]')],
+          [850, () => (klick(), anfang())],
+          [700, () => {}],
+        ];
+        let i = 0;
+        const weiter = () => {
+          const [warte, tun] = schritte[i];
+          setTimeout(() => {
+            tun();
+            i = (i + 1) % schritte.length;
+            weiter();
+          }, warte);
+        };
+        weiter();
+      }
+    </script>
+  </body>
+</html>
